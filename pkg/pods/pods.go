@@ -1,11 +1,24 @@
 package pods
 
-import "fmt"
+import (
+	"fmt"
 
-// ListPods contains the business logic for listing pods.
-// For now, its only printing a message.
-// Later, will make this talk to the Kubernetes API.
+	"github.com/Vinaychinnu/kubex/pkg/client"
+)
+
+// ListPods will later list pods.
+// It verifies Kubernetes connectivity.
 func ListPods() error {
-	fmt.Println("Listing pods (from pkg/pods)")
+	clientset, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	version, err := clientset.Discovery().ServerVersion()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Connected to Kubernetes cluster. Server version: %s\n", version.String())
 	return nil
 }
