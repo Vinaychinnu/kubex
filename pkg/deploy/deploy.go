@@ -9,6 +9,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 )
 
 // Apply reads a deployment YAML and creates it in the cluster
@@ -36,16 +38,55 @@ func Apply(filePath string) error {
 		namespace = "default"
 	}
 
-	_, err = clientset.AppsV1().
+	deploymentsClient := clientset.AppsV1().Deployments(namespace)
+
+	_, err = deploymentsClient.Create(
+		context.TODO(),
+		&deployment,
+		metav1.CreateOptions{},
+	)
+
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			fmt.Printf(
+				"Deployment %q already exists in namespace %q\n",
+				deployment.Name,
+				namespace,
+			)
+			return nil
+		}
+		return err
+}
+
+
+	fmt.Printf(
+		"Deployment %q created in namespace %q\n",
+		deployment.Name,
+		namespace,
+	)
+
+	return nil
+}
+
+// Delete deletes a deployment by name from default namespace
+func Delete(name string) error {
+	clientset, err := client.NewClient()
+	if err != nil {
+		return err
+	}
+
+	namespace := "default"
+
+	err = clientset.AppsV1().
 		Deployments(namespace).
-		Create(context.TODO(), &deployment, metav1.CreateOptions{})
+		Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf(
-		"Deployment %q created in namespace %q\n",
-		deployment.Name,
+		"Deployment %q deleted from namespace %q\n",
+		name,
 		namespace,
 	)
 
