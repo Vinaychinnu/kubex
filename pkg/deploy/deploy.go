@@ -7,14 +7,13 @@ import (
 
 	"github.com/Vinaychinnu/kubex/pkg/client"
 	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 )
 
 // Apply reads a deployment YAML and creates it in the cluster
-func Apply(filePath string) error {
+func Apply(filePath string, namespace string) error {
 	clientset, err := client.NewClient()
 	if err != nil {
 		return err
@@ -33,10 +32,14 @@ func Apply(filePath string) error {
 		return fmt.Errorf("failed to decode yaml: %w", err)
 	}
 
-	namespace := deployment.Namespace
+	if namespace == "" {
+		namespace = deployment.Namespace
+	}
 	if namespace == "" {
 		namespace = "default"
 	}
+
+	deployment.Namespace = namespace
 
 	deploymentsClient := clientset.AppsV1().Deployments(namespace)
 
@@ -56,8 +59,7 @@ func Apply(filePath string) error {
 			return nil
 		}
 		return err
-}
-
+	}
 
 	fmt.Printf(
 		"Deployment %q created in namespace %q\n",
@@ -68,14 +70,12 @@ func Apply(filePath string) error {
 	return nil
 }
 
-// Delete deletes a deployment by name from default namespace
-func Delete(name string) error {
+// Delete deletes a deployment by name from the given namespace
+func Delete(name string, namespace string) error {
 	clientset, err := client.NewClient()
 	if err != nil {
 		return err
 	}
-
-	namespace := "default"
 
 	err = clientset.AppsV1().
 		Deployments(namespace).
