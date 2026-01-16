@@ -8,18 +8,18 @@ import (
 )
 
 var filePath string
+var deployNamespace string
+var dryRun bool
 
 var deployApplyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "Apply a deployment manifest",
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := deploy.Apply(filePath, deployNamespace); err != nil {
+		if err := deploy.Apply(filePath, deployNamespace, dryRun); err != nil {
 			log.Fatalf("failed to apply deployment: %v", err)
 		}
 	},
 }
-
-var deployNamespace string
 
 func init() {
 
@@ -37,6 +37,13 @@ func init() {
 		"n",
 		"default",
 		"Namespace to apply deployment to",
+	)
+
+	deployApplyCmd.Flags().BoolVar(
+		&dryRun,
+		"dry-run",
+		false,
+		"Show what would be applied without making changes",
 	)
 
 	deployApplyCmd.MarkFlagRequired("file")

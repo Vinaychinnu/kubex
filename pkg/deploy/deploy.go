@@ -13,12 +13,7 @@ import (
 )
 
 // Apply reads a deployment YAML and creates it in the cluster
-func Apply(filePath string, namespace string) error {
-	clientset, err := client.NewClient()
-	if err != nil {
-		return err
-	}
-
+func Apply(filePath string, namespace string, dryRun bool) error {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
@@ -32,23 +27,50 @@ func Apply(filePath string, namespace string) error {
 		return fmt.Errorf("failed to decode yaml: %w", err)
 	}
 
+	// Namespace resolution: flag > YAML > default
 	if namespace == "" {
 		namespace = deployment.Namespace
 	}
 	if namespace == "" {
 		namespace = "default"
 	}
-
 	deployment.Namespace = namespace
+
+	// Create Kubernetes client (needed for both dryRun and actual apply)
+	clientset, err := client.NewClient()
+	if err != nil {
+		return err
+	}
 
 	deploymentsClient := clientset.AppsV1().Deployments(namespace)
 
+	// Server side dryRun
+	if dryRun {
+		_, err := deploymentsClient.Create(
+			context.TODO(),
+			&deployment,
+			metav1.CreateOptions{
+				DryRun: []string{metav1.DryRunAll},
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("dry-run validation failed: %w", err)
+		}
+
+		fmt.Printf(
+			"[DRY-RUN] Deployment %q is valid and would be created in namespace %q\n",
+			deployment.Name,
+			namespace,
+		)
+		return nil
+	}
+
+	// actual apply
 	_, err = deploymentsClient.Create(
 		context.TODO(),
 		&deployment,
 		metav1.CreateOptions{},
 	)
-
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			fmt.Printf(
@@ -66,7 +88,6 @@ func Apply(filePath string, namespace string) error {
 		deployment.Name,
 		namespace,
 	)
-
 	return nil
 }
 
