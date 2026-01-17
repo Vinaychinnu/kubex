@@ -71,16 +71,34 @@ func Apply(filePath string, namespace string, dryRun bool) error {
 		&deployment,
 		metav1.CreateOptions{},
 	)
+
 	if err != nil {
-		if apierrors.IsAlreadyExists(err) {
+		switch {
+		case apierrors.IsAlreadyExists(err):
 			fmt.Printf(
 				"Deployment %q already exists in namespace %q\n",
 				deployment.Name,
 				namespace,
 			)
 			return nil
+
+		case apierrors.IsInvalid(err):
+			return fmt.Errorf(
+				"deployment %q is invalid: %v",
+				deployment.Name,
+				err,
+			)
+
+		case apierrors.IsForbidden(err):
+			return fmt.Errorf(
+				"permission denied while creating deployment %q in namespace %q",
+				deployment.Name,
+				namespace,
+			)
+
+		default:
+			return fmt.Errorf("failed to create deployment: %w", err)
 		}
-		return err
 	}
 
 	fmt.Printf(
@@ -102,7 +120,25 @@ func Delete(name string, namespace string) error {
 		Deployments(namespace).
 		Delete(context.TODO(), name, metav1.DeleteOptions{})
 	if err != nil {
-		return err
+		switch {
+		case apierrors.IsNotFound(err):
+			fmt.Printf(
+				"Deployment %q not found in namespace %q\n",
+				name,
+				namespace,
+			)
+			return nil
+
+		case apierrors.IsForbidden(err):
+			return fmt.Errorf(
+				"permission denied while deleting deployment %q in namespace %q",
+				name,
+				namespace,
+			)
+
+		default:
+			return fmt.Errorf("failed to delete deployment: %w", err)
+		}
 	}
 
 	fmt.Printf(
