@@ -37,9 +37,42 @@ On Windows:
 
     go build -o kubex.exe
 
+## Add kubex to PATH
+
+Adding kubex to your PATH allows you to run `kubex` from anywhere
+without specifying the binary location.
+
+### Windows
+
+1. Create a directory (if it does not exist):
+
+        C:\Users\<your-username>\bin
+
+2. Move `kubex.exe` to that directory.
+3. Add the directory to the **PATH** environment variable.
+4. Restart the terminal.
+
+After this, you can run:
+
+    kubex pods list
+
+### macOS / Linux
+
+1. Move the binary to a directory in PATH, for example:
+
+        sudo mv kubex /usr/local/bin/kubex
+
+2. Ensure it is executable:
+
+        chmod +x /usr/local/bin/kubex
+
+After this, you can run:
+
+    kubex pods list
+
 ## Usage
 
-After building the binary, run commands using:
+If the binary is not added to PATH, run it from the project directory:
 
     ./kubex <command>
 
@@ -65,5 +98,5 @@ On Windows:
 
 kubex follows a clean separation between CLI wiring and business logic.
 
-A detailed architecture explanation is available here:
+A detailed architecture explanation is available in:
 docs/architecture.md
